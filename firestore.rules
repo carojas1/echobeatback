@@ -1,0 +1,114 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ==================== HELPER FUNCTIONS ====================
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isValidString(value) {
+      return value is string && value.size() > 0 && value.size() <= 500;
+    }
+    
+    // ==================== USERS ====================
+    match /users/{userId} {
+      // Cualquiera puede leer perfiles públicos
+      allow read: if true;
+      
+      // Solo el dueño puede crear/actualizar su perfil
+      allow create: if isOwner(userId) 
+        && request.resource.data.email is string
+        && request.resource.data.displayName is string;
+      
+      allow update: if isOwner(userId);
+      
+      // No se permite eliminar perfiles
+      allow delete: if false;
+      
+      // ==================== FAVORITES (Subcolección) ====================
+      match /favorites/{songId} {
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId);
+      }
+      
+      // ==================== FOLLOWING (Subcolección) ====================
+      match /following/{followingId} {
+        allow read: if true;
+        allow write: if isOwner(userId);
+      }
+      
+      // ==================== FOLLOWERS (Subcolección) ====================
+      match /followers/{followerId} {
+        allow read: if true;
+        allow write: if isSignedIn();
+      }
+    }
+    
+    // ==================== SONGS ====================
+    match /songs/{songId} {
+      // Cualquiera puede leer canciones públicas
+      allow read: if resource.data.isPublic == true 
+        || isOwner(resource.data.uploadedBy);
+      
+      // Solo usuarios autenticados pueden crear canciones
+      allow create: if isSignedIn() 
+        && request.resource.data.uploadedBy == request.auth.uid
+        && isValidString(request.resource.data.title)
+        && isValidString(request.resource.data.artist)
+        && request.resource.data.duration is number
+        && request.resource.data.isPublic is bool;
+      
+      // Solo el creador puede actualizar/eliminar
+      allow update: if isOwner(resource.data.uploadedBy);
+      allow delete: if isOwner(resource.data.uploadedBy);
+      
+      // ==================== COMMENTS (Subcolección) ====================
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn()
+          && request.resource.data.userId == request.auth.uid
+          && isValidString(request.resource.data.content);
+        allow update, delete: if isOwner(resource.data.userId);
+      }
+    }
+    
+    // ==================== PLAYLISTS ====================
+    match /playlists/{playlistId} {
+      // Leer playlists públicas o propias
+      allow read: if resource.data.isPublic == true 
+        || isOwner(resource.data.userId);
+      
+      // Solo usuarios autenticados pueden crear
+      allow create: if isSignedIn() 
+        && request.resource.data.userId == request.auth.uid
+        && isValidString(request.resource.data.name)
+        && request.resource.data.isPublic is bool
+        && request.resource.data.songCount is number;
+      
+      // Solo el dueño puede actualizar/eliminar
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // ==================== ACTIVITY ====================
+    match /activity/{activityId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isOwner(resource.data.userId);
+    }
+    
+    // ==================== ALBUMS ====================
+    match /albums/{albumId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isOwner(resource.data.createdBy);
+    }
+  }
+}

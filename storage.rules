@@ -1,0 +1,75 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ==================== HELPER FUNCTIONS ====================
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function isImageFile() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isAudioFile() {
+      return request.resource.contentType.matches('audio/.*');
+    }
+    
+    function isValidSize(maxSizeMB) {
+      return request.resource.size < maxSizeMB * 1024 * 1024;
+    }
+    
+    // ==================== SONGS (MP3 Files) ====================
+    match /songs/{songId}.mp3 {
+      // Cualquiera puede leer archivos de audio
+      allow read: if true;
+      
+      // Solo usuarios autenticados pueden subir
+      // Máximo 20MB por archivo
+      allow write: if isSignedIn() 
+        && isAudioFile() 
+        && isValidSize(20);
+    }
+    
+    // ==================== COVERS (Imágenes de portadas) ====================
+    match /covers/{imageId} {
+      // Cualquiera puede leer covers
+      allow read: if true;
+      
+      // Solo usuarios autenticados pueden subir
+      // Máximo 5MB por imagen
+      allow write: if isSignedIn() 
+        && isImageFile() 
+        && isValidSize(5);
+    }
+    
+    // ==================== AVATARS (Fotos de perfil) ====================
+    match /avatars/{userId}/{imageId} {
+      // Cualquiera puede leer avatares
+      allow read: if true;
+      
+      // Solo el dueño puede subir/actualizar su avatar
+      // Máximo 2MB por imagen
+      allow write: if isOwner(userId) 
+        && isImageFile() 
+        && isValidSize(2);
+    }
+    
+    // ==================== PLAYLIST COVERS ====================
+    match /playlist-covers/{playlistId}.{ext} {
+      // Cualquiera puede leer
+      allow read: if true;
+      
+      // Solo autenticados pueden subir
+      // Máximo 3MB
+      allow write: if isSignedIn() 
+        && isImageFile() 
+        && isValidSize(3);
+    }
+  }
+}

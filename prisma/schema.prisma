@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String?
+  displayName   String
+  avatar        String?
+  bio           String?
+  googleId      String?   @unique
+  
+  // RBAC Fields
+  role          UserRole    @default(USER)
+  status        UserStatus  @default(ACTIVE)
+  
+  isVerified    Boolean   @default(false)
+  verificationToken String?
+  resetPasswordToken String?
+  resetPasswordExpires DateTime?
+  
+  followers     Follow[]  @relation("Followers")
+  following     Follow[]  @relation("Following")
+  
+  playlists     Playlist[]
+  favoriteSongs Favorite[]
+  playHistory   PlayHistory[]
+  uploadedSongs Song[]    @relation("UploadedSongs")
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([googleId])
+}
+
+model Song {
+  id            String    @id @default(uuid())
+  title         String
+  artist        String
+  album         String?
+  duration      Int
+  fileUrl       String
+  coverUrl      String?
+  genre         String?
+  mood          String?
+  playCount     Int       @default(0)
+  
+  // Firebase owner tracking
+  ownerUid      String?
+  ownerEmail    String?
+  
+  // Track who uploaded (admin)
+  createdBy     String?
+  creator       User?     @relation("UploadedSongs", fields: [createdBy], references: [id], onDelete: SetNull)
+  
+  albumId       String?
+  albumRelation Album?    @relation(fields: [albumId], references: [id])
+  
+  playlists     PlaylistSong[]
+  favorites     Favorite[]
+  playHistory   PlayHistory[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([title])
+  @@index([artist])
+  @@index([album])
+  @@index([genre])
+  @@index([playCount])
+  @@index([createdBy])
+  @@index([ownerUid])
+}
+
+model Album {
+  id            String    @id @default(uuid())
+  title         String
+  artist        String
+  coverUrl      String?
+  releaseYear   Int?
+  genre         String?
+  
+  songs         Song[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([title])
+  @@index([artist])
+}
+
+model Playlist {
+  id            String    @id @default(uuid())
+  name          String
+  description   String?
+  coverUrl      String?
+  isPublic      Boolean   @default(true)
+  
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  songs         PlaylistSong[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([name])
+}
+
+model PlaylistSong {
+  id          String    @id @default(uuid())
+  playlistId  String
+  playlist    Playlist  @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  songId      String
+  song        Song      @relation(fields: [songId], references: [id], onDelete: Cascade)
+  order       Int
+  
+  addedAt     DateTime  @default(now())
+
+  @@unique([playlistId, songId])
+  @@index([playlistId])
+  @@index([songId])
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, songId])
+  @@index([userId])
+  @@index([songId])
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model PlayHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  
+  playedAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([songId])
+  @@index([playedAt])
+}
