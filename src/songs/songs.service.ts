@@ -34,8 +34,12 @@ export class SongsService {
     const filePath = path.join(uploadDir, filename);
     fs.writeFileSync(filePath, file.buffer);
 
-    // URL para acceder al archivo
-    const fileUrl = `${this.configService.get('APP_URL') || 'http://localhost:3000'}/uploads/songs/${filename}`;
+    // URL para acceder al archivo (siempre absoluta)
+    const baseUrl =
+      this.configService.get('PUBLIC_BASE_URL') ||
+      this.configService.get('APP_URL') ||
+      'http://localhost:3000';
+    const fileUrl = `${baseUrl}/uploads/songs/${filename}`;
 
     const song = await this.prisma.song.create({
       data: {

@@ -61,9 +61,10 @@ export class SongsController {
     @Body() uploadSongDto: UploadSongDto,
     @Request() req,
   ) {
-    console.log('✅ BODY:', uploadSongDto);
+    console.log('✅ HIT /songs/upload - file?', !!file, 'body:', uploadSongDto);
     console.log('✅ FILE:', file?.originalname, file?.mimetype, file?.size);
     console.log('✅ USER:', req.user);
+    console.log('✅ ABOUT TO UPLOAD/SAVE');
     return this.songsService.uploadSong(file, uploadSongDto, req.user);
   }
 
