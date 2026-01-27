@@ -7,14 +7,25 @@ export class FirebaseAdminService {
     try {
       // Initialize Firebase Admin if not already initialized
       if (!admin.apps.length) {
-        // Uses GOOGLE_APPLICATION_CREDENTIALS environment variable
-        admin.initializeApp();
-        console.log('✅ Firebase Admin initialized successfully');
+        const credentialsJson = process.env.FIREBASE_CREDENTIALS_JSON;
+
+        if (credentialsJson) {
+          // Railway/Production: Use JSON from environment variable
+          const credentials = JSON.parse(credentialsJson);
+          admin.initializeApp({
+            credential: admin.credential.cert(credentials),
+          });
+          console.log('✅ Firebase Admin initialized from FIREBASE_CREDENTIALS_JSON');
+        } else {
+          // Development: Uses GOOGLE_APPLICATION_CREDENTIALS file path
+          admin.initializeApp();
+          console.log('✅ Firebase Admin initialized from GOOGLE_APPLICATION_CREDENTIALS');
+        }
       }
     } catch (error) {
       console.error('❌ Firebase Admin initialization failed:', error.message);
       console.error(
-        '💡 Make sure GOOGLE_APPLICATION_CREDENTIALS is set to your service account JSON file path',
+        '💡 Set FIREBASE_CREDENTIALS_JSON (production) or GOOGLE_APPLICATION_CREDENTIALS (development)',
       );
       throw error;
     }

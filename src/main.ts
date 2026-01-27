@@ -20,13 +20,9 @@ async function bootstrap() {
     next();
   });
 
+  // ✅ CORS configurado para aceptar cualquier origen (desarrollo)
   app.enableCors({
-    origin: [
-      process.env.FRONTEND_URL || 'http://localhost:5173',
-      'http://localhost:5174', // ✅ PUERTO DEL FRONTEND
-      'http://localhost:8100',
-      'http://localhost:3000',
-    ],
+    origin: true, // Acepta cualquier origen
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
