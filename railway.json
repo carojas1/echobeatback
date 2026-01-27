@@ -5,6 +5,7 @@
     "buildCommand": "npm install --legacy-peer-deps && npm run build"
   },
   "deploy": {
+    "preDeployCommand": "npx prisma db push",
     "startCommand": "npm run start:prod",
     "restartPolicyType": "ON_FAILURE",
     "healthcheckPath": "/api/docs",
