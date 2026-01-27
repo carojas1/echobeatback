@@ -190,6 +190,7 @@ model SupportMessage {
   userName  String
   message   String
   isRead    Boolean  @default(false)
+  isAdmin   Boolean  @default(false) // Indica si es respuesta del admin
   createdAt DateTime @default(now())
 
   @@index([userId])

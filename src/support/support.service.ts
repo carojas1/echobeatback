@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { CreateSupportMessageDto } from './dto/create-support-message.dto';
+import { CreateAdminReplyDto } from './dto/create-admin-reply.dto';
 
 @Injectable()
 export class SupportService {
@@ -20,6 +21,47 @@ export class SupportService {
       id: message.id,
       message: message.message,
       createdAt: message.createdAt,
+    };
+  }
+
+  async createAdminReply(dto: CreateAdminReplyDto, adminUser: any) {
+    const message = await this.prisma.supportMessage.create({
+      data: {
+        userId: dto.targetUserId,
+        userEmail: adminUser.email, // Admin's email as sender
+        userName: 'Soporte EchoBeat', // Generic name for admin
+        message: dto.message,
+        isAdmin: true,
+        isRead: false, // User hasn't read it yet
+      },
+    });
+
+    return {
+      id: message.id,
+      message: message.message,
+      createdAt: message.createdAt,
+    };
+  }
+
+  async getMyHistory(userId: string, page: number = 1, limit: number = 50) {
+    const skip = (page - 1) * limit;
+
+    const [messages, total] = await Promise.all([
+      this.prisma.supportMessage.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'asc' }, // Oldest first for chat history
+      }),
+      this.prisma.supportMessage.count({ where: { userId } }),
+    ]);
+
+    return {
+      messages,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
   }
 
