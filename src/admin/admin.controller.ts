@@ -9,7 +9,9 @@ import {
   Body,
   Query,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
+import * as admin from 'firebase-admin';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -172,5 +174,60 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Returns song-specific statistics' })
   async getSongStats() {
     return this.adminService.getSongStats();
+  }
+
+  // ==================== FIREBASE USERS ====================
+
+  @Get('firebase-users')
+  @ApiOperation({ summary: 'Get all Firebase users (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Returns list of Firebase Auth users' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async getFirebaseUsers(@Query('limit') limit: string = '100') {
+    const listUsersResult = await admin.auth().listUsers(Number(limit));
+
+    const users = listUsersResult.users.map((user) => ({
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName || user.email?.split('@')[0] || 'Usuario',
+      photoURL: user.photoURL,
+      disabled: user.disabled,
+      createdAt: user.metadata.creationTime,
+      lastSignIn: user.metadata.lastSignInTime,
+    }));
+
+    return { users, total: users.length };
+  }
+
+  @Delete('firebase-users/:uid')
+  @ApiOperation({ summary: 'Delete Firebase user (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User deleted from Firebase' })
+  async deleteFirebaseUser(@Param('uid') uid: string) {
+    const user = await admin.auth().getUser(uid);
+
+    if (user.email === 'carojas@sudamericano.edu.ec') {
+      throw new ForbiddenException('No puedes eliminar al administrador');
+    }
+
+    await admin.auth().deleteUser(uid);
+    return { success: true, message: 'Usuario eliminado' };
+  }
+
+  @Patch('firebase-users/:uid/toggle')
+  @ApiOperation({ summary: 'Enable/Disable Firebase user (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User status toggled' })
+  async toggleFirebaseUser(@Param('uid') uid: string) {
+    const user = await admin.auth().getUser(uid);
+
+    if (user.email === 'carojas@sudamericano.edu.ec') {
+      throw new ForbiddenException('No puedes deshabilitar al administrador');
+    }
+
+    await admin.auth().updateUser(uid, { disabled: !user.disabled });
+
+    return {
+      success: true,
+      disabled: !user.disabled,
+      message: user.disabled ? 'Usuario habilitado' : 'Usuario deshabilitado',
+    };
   }
 }
