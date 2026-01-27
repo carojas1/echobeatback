@@ -1,45 +1,23 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
-import { S3 } from 'aws-sdk';
-import { v4 as uuidv4 } from 'uuid';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UploadSongDto } from './dto/upload-song.dto';
 
 @Injectable()
 export class SongsService {
-  private s3: S3;
-
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
-  ) {
-    this.s3 = new S3({
-      accessKeyId: this.configService.get('AWS_ACCESS_KEY_ID'),
-      secretAccessKey: this.configService.get('AWS_SECRET_ACCESS_KEY'),
-      region: this.configService.get('AWS_REGION'),
-    });
-  }
+    private cloudinaryService: CloudinaryService,
+  ) {}
 
   async uploadSong(file: any, uploadSongDto: UploadSongDto, firebaseUser?: any) {
-    const fs = require('fs');
-    const path = require('path');
+    // Subir a Cloudinary
+    const uploadResult = await this.cloudinaryService.uploadAudio(file, 'songs');
+    const fileUrl = uploadResult.secure_url;
 
-    const filename = `${uuidv4()}-${file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const uploadDir = path.join(process.cwd(), 'uploads', 'songs');
-
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    const filePath = path.join(uploadDir, filename);
-    fs.writeFileSync(filePath, file.buffer);
-
-    // URL para acceder al archivo (siempre absoluta)
-    const baseUrl =
-      this.configService.get('PUBLIC_BASE_URL') ||
-      this.configService.get('APP_URL') ||
-      'http://localhost:3000';
-    const fileUrl = `${baseUrl}/uploads/songs/${filename}`;
+    console.log('✅ Song uploaded to Cloudinary:', fileUrl);
 
     const song = await this.prisma.song.create({
       data: {

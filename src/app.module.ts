@@ -4,7 +4,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { DatabaseModule } from './database/database.module';
-// import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { FirebaseAdminModule } from './firebase/firebase-admin.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -34,7 +34,7 @@ import { AdminModule } from './admin/admin.module';
       },
     ]),
     DatabaseModule,
-    // CloudinaryModule,
+    CloudinaryModule,
     FirebaseAdminModule,
     AuthModule,
     UsersModule,

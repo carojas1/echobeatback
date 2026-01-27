@@ -12,10 +12,7 @@ export class CloudinaryService {
     });
   }
 
-  async uploadAudio(
-    file: Express.Multer.File,
-    folder: string = 'songs',
-  ): Promise<UploadApiResponse> {
+  async uploadAudio(file: any, folder: string = 'songs'): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
