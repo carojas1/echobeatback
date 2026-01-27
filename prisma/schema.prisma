@@ -182,3 +182,17 @@ model PlayHistory {
   @@index([songId])
   @@index([playedAt])
 }
+
+model SupportMessage {
+  id        String   @id @default(uuid())
+  userId    String
+  userEmail String
+  userName  String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}

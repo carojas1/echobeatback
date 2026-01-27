@@ -17,6 +17,7 @@ import { SearchModule } from './search/search.module';
 import { ActivityModule } from './activity/activity.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
 import { AdminModule } from './admin/admin.module';
+import { SupportModule } from './support/support.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { AdminModule } from './admin/admin.module';
     ActivityModule,
     RecommendationsModule,
     AdminModule,
+    SupportModule,
   ],
   providers: [
     // JWT guards removed - using Firebase Authentication
