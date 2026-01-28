@@ -5,12 +5,16 @@ import { CreateSupportMessageDto } from './dto/create-support-message.dto';
 import { CreateAdminReplyDto } from './dto/create-admin-reply.dto';
 import { FirebaseAuthGuard } from '../common/guards/firebase-auth.guard';
 import { AdminEmailGuard } from '../common/guards/admin-email.guard';
+import { EmailService } from '../email/email.service';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('support')
 @Controller()
 export class SupportController {
-  constructor(private supportService: SupportService) {}
+  constructor(
+    private supportService: SupportService,
+    private emailService: EmailService,
+  ) {}
 
   // ==================== USER ENDPOINTS ====================
 
@@ -21,6 +25,16 @@ export class SupportController {
   @ApiResponse({ status: 201, description: 'Message sent successfully' })
   async createMessage(@Body() createDto: CreateSupportMessageDto, @CurrentUser() user: any) {
     const data = await this.supportService.createMessage(createDto, user);
+
+    // Notificación por email al admin
+    // @ts-ignore
+    await this.emailService.sendSupportNotification(
+      user.email,
+      user.name || user.displayName || 'Usuario EchoBeat',
+      createDto.message,
+      user.uid || user.id,
+    );
+
     return { success: true, data };
   }
 

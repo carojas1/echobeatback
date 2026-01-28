@@ -18,6 +18,7 @@ import { ActivityModule } from './activity/activity.module';
 import { RecommendationsModule } from './recommendations/recommendations.module';
 import { AdminModule } from './admin/admin.module';
 import { SupportModule } from './support/support.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -44,11 +45,11 @@ import { SupportModule } from './support/support.module';
     FavoritesModule,
     AlbumsModule,
     ArtistsModule,
-    SearchModule,
     ActivityModule,
     RecommendationsModule,
     AdminModule,
     SupportModule,
+    EmailModule,
   ],
   providers: [
     // JWT guards removed - using Firebase Authentication
